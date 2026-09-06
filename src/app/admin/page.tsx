@@ -202,6 +202,87 @@ export default function AdminPage() {
 
 /* ---------- HOJE ---------- */
 
+/* Solicitações de planos aguardando aprovação — destaque na aba Hoje */
+function PendingPlanRequests() {
+  const [items, setItems] = useState<SubscriptionWithRelations[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await api<SubscriptionWithRelations[]>(
+        "/api/admin/subscriptions?status=aguardando"
+      );
+      setItems(res.data ?? []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => void load(), [load]);
+
+  const decide = async (id: string, status: "ativo" | "recusado") => {
+    try {
+      await api("/api/admin/subscriptions", {
+        method: "PATCH",
+        body: JSON.stringify({ id, status }),
+      });
+      await load();
+    } catch (e) {
+      setToast((e as Error).message);
+    }
+  };
+
+  if (loading) return null;
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-6 rounded-2xl border border-brand-gold/40 bg-brand-gold/5 p-5">
+      <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-brand-orange">
+        <CreditCardIcon className="h-4 w-4" />
+        Solicitações de planos ({items.length})
+      </h4>
+      <p className="mt-1 text-xs text-brand-gray">
+        Clientes que pediram ativação com você. Ao aprovar, a contagem do plano começa na hora.
+      </p>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      <div className="mt-3 space-y-2">
+        {items.map((s) => (
+          <div
+            key={s.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-border bg-brand-card px-4 py-3 text-sm"
+          >
+            <div>
+              <div className="font-semibold">
+                {s.customers?.name ?? "Cliente"} · {s.plans?.name ?? "Plano"}
+              </div>
+              <div className="text-xs text-brand-gray">
+                Solicitado em {formatDateBR(s.requested_at?.slice(0, 10) ?? "")}
+                {s.plans ? ` · ${formatPrice(s.plans.price)}` : ""}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <ActionBtn
+                label="Aprovar"
+                onClick={() => void decide(s.id, "ativo")}
+                tone="green"
+              />
+              <ActionBtn
+                label="Recusar"
+                onClick={() => void decide(s.id, "recusado")}
+                tone="red"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TodayTab() {
   const [items, setItems] = useState<AppointmentWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,6 +328,7 @@ function TodayTab() {
         onRefresh={() => void load()}
       />
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      <PendingPlanRequests />
       {loading ? (
         <EmptyState text="Carregando…" />
       ) : sorted.length === 0 ? (
@@ -1932,7 +2014,12 @@ function ClientsTab() {
                   {subscriptions.map((s) => (
                     <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-border bg-brand-darker px-4 py-3 text-sm">
                       <div>
-                        <div className="font-semibold">{s.plans?.name ?? "Plano removido"}</div>
+                        <div className="font-semibold">
+                          {s.plans?.name ?? "Plano removido"}
+                          {s.customers?.name ? (
+                            <span className="text-brand-gray"> · {s.customers.name}</span>
+                          ) : null}
+                        </div>
                         <div className="text-xs text-brand-gray">
                           {s.start_date ? `Início ${formatDateBR(s.start_date)}` : "Aguardando aprovação"}
                           {s.end_date ? ` · até ${formatDateBR(s.end_date)}` : ""}

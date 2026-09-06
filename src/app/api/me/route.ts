@@ -116,6 +116,16 @@ export async function POST(request: NextRequest) {
     await supabase.from("customers").select("*").eq("email", email).maybeSingle()
   ).data;
   if (!customer) {
+    // Fallback com service role (ignora RLS e possíveis duplicados)
+    const { data: adminRows } = await supabaseAdmin
+      .from("customers")
+      .select("*")
+      .eq("email", email)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    customer = adminRows?.[0] ?? null;
+  }
+  if (!customer) {
     const signupMethod = signupMethodFromUser(user);
     const insertFields: Record<string, unknown> = {
       name: name ?? email.split("@")[0],
@@ -123,13 +133,35 @@ export async function POST(request: NextRequest) {
       signup_method: signupMethod,
     };
     if (phone) insertFields.phone = phone;
-    customer = (
-      await supabaseAdmin
+    const inserted = await supabaseAdmin
+      .from("customers")
+      .insert(insertFields)
+      .select("*")
+      .single();
+    if (inserted.error || !inserted.data) {
+      console.error("[api/me] Falha ao criar customer:", inserted.error?.message);
+      // Pode ser corrida/uniq: tenta localizar novamente
+      const { data: retryRows } = await supabaseAdmin
         .from("customers")
-        .insert(insertFields)
         .select("*")
-        .single()
-    ).data;
+        .eq("email", email)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      customer = retryRows?.[0] ?? null;
+      if (!customer) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: `Não foi possível criar seu cadastro de cliente: ${
+              inserted.error?.message ?? "erro desconhecido"
+            }`,
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      customer = inserted.data;
+    }
   } else if (phone && !customer.phone) {
     // Sincroniza o celular capturado no cadastro (ou metadata do Google)
     const updated = await supabaseAdmin
