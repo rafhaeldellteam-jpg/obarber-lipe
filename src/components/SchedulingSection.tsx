@@ -7,6 +7,7 @@ import { buildWhatsAppLink, confirmMessage } from "@/lib/whatsapp";
 import { OWNER_WHATSAPP } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "@/components/icons";
+import { SkeletonSlots } from "@/components/Loading";
 
 type SlotModal = {
   clientName: string;
@@ -74,9 +75,13 @@ export function SchedulingSection() {
   );
 
   const availableTimes = slots.filter((s) => s.available).map((s) => s.time);
-  const canSubmit =
-    Boolean(serviceId) && Boolean(date) && Boolean(time) &&
-    name.trim().length >= 2 && unmaskPhone(phone).length >= 10;
+  const selectedService = services.find((s) => s.id === serviceId) ?? null;
+  const missing: string[] = [];
+  if (!serviceId) missing.push("serviço");
+  if (!time) missing.push("horário");
+  if (name.trim().length < 2) missing.push("nome");
+  if (unmaskPhone(phone).length < 10) missing.push("WhatsApp");
+  const canSubmit = missing.length === 0;
 
   const onEmployeeChange = (id: string) => {
     setEmployeeId(id);
@@ -183,6 +188,7 @@ export function SchedulingSection() {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
+                aria-pressed={anyEmployee}
                 onClick={() => onEmployeeChange("any")}
                 className={cn(
                   "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors btn-focus",
@@ -197,6 +203,7 @@ export function SchedulingSection() {
                 <button
                   key={emp.id}
                   type="button"
+                  aria-pressed={!anyEmployee && employeeId === emp.id}
                   onClick={() => onEmployeeChange(emp.id)}
                   className={cn(
                     "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors btn-focus",
@@ -226,6 +233,7 @@ export function SchedulingSection() {
                 <button
                   key={svc.id}
                   type="button"
+                  aria-pressed={serviceId === svc.id}
                   onClick={() => setServiceId(svc.id)}
                   className={cn(
                     "rounded-xl border p-3 text-left transition-colors btn-focus",
@@ -245,6 +253,11 @@ export function SchedulingSection() {
                   </span>
                 </button>
               ))}
+              {!loadingSlots && services.length === 0 && (
+                <p className="rounded-xl border border-dashed border-brand-border p-4 text-sm text-brand-gray sm:col-span-2">
+                  Nenhum serviço cadastrado no momento. Fale conosco pelo WhatsApp.
+                </p>
+              )}
             </div>
           </div>
 
@@ -265,9 +278,7 @@ export function SchedulingSection() {
               />
               <div className="min-h-[120px]">
                 {loadingSlots ? (
-                  <p className="py-6 text-center text-sm text-brand-gray">
-                    Carregando horários…
-                  </p>
+                  <SkeletonSlots />
                 ) : availableTimes.length === 0 ? (
                   <p className="py-6 text-center text-sm text-brand-gray">
                     Nenhum horário disponível para essa data.
@@ -278,6 +289,7 @@ export function SchedulingSection() {
                       <button
                         key={t}
                         type="button"
+                        aria-pressed={time === t}
                         onClick={() => setTime(t)}
                         className={cn(
                           "rounded-lg border px-2 py-2 text-xs font-bold transition-colors btn-focus",
@@ -352,6 +364,31 @@ export function SchedulingSection() {
                 className="w-full rounded-xl border border-brand-border bg-brand-darker px-4 py-3 text-sm text-brand-text placeholder:text-brand-gray/60 btn-focus"
               />
             </div>
+          </div>
+
+          {/* Resumo da seleção */}
+          <div className="mt-8 rounded-2xl border border-brand-border bg-brand-darker p-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <span className="font-bold uppercase tracking-wider text-xs text-brand-gray">
+                Resumo
+              </span>
+              <span className={cn(selectedService ? "text-brand-text" : "text-brand-gray")}>
+                {selectedService
+                  ? `${selectedService.name} · R$ ${selectedService.price.toFixed(2).replace(".", ",")}`
+                  : "Serviço não escolhido"}
+              </span>
+              <span className={cn(time ? "text-brand-text" : "text-brand-gray")}>
+                {time ? `${formatDateBR(date)} às ${time}` : "Data/horário não escolhidos"}
+              </span>
+              <span className={cn(anyEmployee || selectedEmployee ? "text-brand-text" : "text-brand-gray")}>
+                {selectedEmployee?.name ?? (anyEmployee ? "Qualquer profissional" : "Profissional livre")}
+              </span>
+            </div>
+            {!canSubmit && missing.length > 0 && (
+              <p className="mt-2 text-xs text-brand-gray">
+                Falta preencher: <span className="font-semibold text-brand-orange">{missing.join(", ")}</span>.
+              </p>
+            )}
           </div>
 
           {error && (

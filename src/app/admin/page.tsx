@@ -24,6 +24,7 @@ import {
 import { buildWhatsAppLink, statusWhatsAppMessage } from "@/lib/whatsapp";
 import { STATUS_LABELS } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import { Loading } from "@/components/Loading";
 import {
   CalendarIcon,
   BarberPoleIcon,
@@ -123,7 +124,7 @@ export default function AdminPage() {
   if (loading || !user || !isAdmin) {
     return (
       <main className="grid min-h-screen place-items-center bg-brand-black">
-        <div className="text-sm text-brand-gray">Carregando…</div>
+        <Loading />
       </main>
     );
   }

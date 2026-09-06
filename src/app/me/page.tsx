@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useTheme } from "@/lib/ThemeContext";
+import { Loading } from "@/components/Loading";
 import { formatDateBR, formatPrice, today } from "@/lib/utils";
 import { STATUS_LABELS } from "@/lib/config";
 import type {
@@ -239,7 +240,7 @@ export default function MePage() {
   if (loading || (!user && loadState === "loading")) {
     return (
       <main className="grid min-h-screen place-items-center">
-        <div className="text-sm text-brand-muted">Carregando…</div>
+        <Loading />
       </main>
     );
   }
@@ -308,7 +309,7 @@ export default function MePage() {
         </div>
       </header>
 
-      <main>
+      <div>
         <section className="mx-auto max-w-5xl px-4 pb-20 pt-8 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -470,7 +471,9 @@ export default function MePage() {
               </div>
 
               {daysLoading ? (
-                <p className="mt-6 text-sm text-brand-muted">Carregando dias…</p>
+                <div className="mt-6">
+                  <Loading label="Carregando dias…" />
+                </div>
               ) : dayBarber ? (
                 dayService ? (
                   <div className="mt-6">
@@ -691,7 +694,7 @@ export default function MePage() {
             Precisando de um corte agora? <ChevronRightIcon className="h-4 w-4" />
           </Link>
         </div>
-      </main>
+      </div>
     </main>
   );
 }

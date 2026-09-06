@@ -13,6 +13,8 @@ import {
   UserIcon,
   ShieldIcon,
   GoogleIcon,
+  EyeIcon,
+  EyeOffIcon,
 } from "@/components/icons";
 
 export function HomeAuth() {
@@ -27,6 +29,7 @@ export function HomeAuth() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -97,10 +100,10 @@ export function HomeAuth() {
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center text-center">
           <Image
-            src="/logo.png"
+            src="/logo.jpg"
             alt="Logo Obarber Lipe"
-            width={1254}
-            height={1254}
+            width={512}
+            height={512}
             priority
             className="h-28 w-28 rounded-2xl object-cover shadow-2xl ring-2 ring-brand-gold/40"
           />
@@ -211,14 +214,26 @@ export function HomeAuth() {
               <div className="relative">
                 <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-brand-border bg-brand-darker py-3 pl-10 pr-4 text-sm text-brand-text placeholder:text-brand-muted/60 btn-focus"
+                  className="w-full rounded-xl border border-brand-border bg-brand-darker py-3 pl-10 pr-11 text-sm text-brand-text placeholder:text-brand-muted/60 btn-focus"
                   required
                   minLength={6}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md text-brand-muted transition-colors hover:text-brand-orange btn-focus"
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-4 w-4" />
+                  ) : (
+                    <EyeIcon className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
 
