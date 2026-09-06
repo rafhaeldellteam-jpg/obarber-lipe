@@ -95,6 +95,28 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  // Ao concluir o corte, envia e-mail pedindo feedback (melhor esforço)
+  if (body.status === "concluido" && data.client_email) {
+    try {
+      const { sendMail, emailTemplate, buttonHtml, siteUrl } = await import("@/lib/email");
+      const employeeName = data.employees?.name ?? "nosso time";
+      const dateBR = data.appointment_date?.split("-").reverse().join("/") ?? "";
+      await sendMail({
+        to: data.client_email,
+        subject: `Como foi seu corte na Obarber Lipe? ⭐`,
+        html: emailTemplate(`
+          <p style="margin:0 0 12px;">Olá, <strong>${data.client_name ?? ""}</strong>!</p>
+          <p style="margin:0 0 12px;">Seu corte com <strong>${employeeName}</strong> em ${dateBR} às ${data.appointment_time ?? ""} foi concluído. ✂️</p>
+          <p style="margin:0;">Sua opinião vale muito: avalie de <strong>1 a 5 estrelas</strong> e, se quiser, deixe um comentário rápido. Leva menos de um minuto!</p>
+          ${buttonHtml(`${siteUrl}/me?tab=feedbacks`, "Avaliar agora ⭐")}
+          <p style="margin:0;color:#737373;font-size:12px;text-align:center;">Até o próximo corte!</p>
+        `),
+      });
+    } catch {
+      // melhor esforço — não bloqueia a conclusão
+    }
+  }
+
   // Ao cancelar, remove o evento do Google Agenda do barbeiro
   if (body.status === "cancelado" && data.employee_id && data.calendar_event_id) {
     try {

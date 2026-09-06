@@ -66,6 +66,38 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* Mobile / PWA */
+body {
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
+}
+
+/* Scrollbar discreta e temática */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--brand-border);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Áreas seguras (notch) em modo standalone */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 ::selection {
   background: rgba(249, 115, 22, 0.35);
   color: #fff;

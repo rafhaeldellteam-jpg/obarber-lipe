@@ -76,7 +76,6 @@ export function SchedulingSection() {
     [employees, employeeId]
   );
 
-  const availableTimes = slots.filter((s) => s.available).map((s) => s.time);
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const missing: string[] = [];
   if (!serviceId) missing.push("serviço");
@@ -245,16 +244,17 @@ export function SchedulingSection() {
               2 · Serviço
             </h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {services.map((svc) => (
+              {services.map((svc, i) => (
                 <button
                   key={svc.id}
                   type="button"
                   aria-pressed={serviceId === svc.id}
                   onClick={() => setServiceId(svc.id)}
+                  style={{ "--i": i } as React.CSSProperties}
                   className={cn(
-                    "rounded-xl border p-3 text-left transition-colors btn-focus",
+                    "animate-fade-in-up stagger-delay rounded-xl border p-3 text-left transition-all duration-200 btn-focus hover:scale-[1.02]",
                     serviceId === svc.id
-                      ? "border-brand-gold bg-brand-gold/15"
+                      ? "border-brand-gold bg-brand-gold/15 shadow-lg shadow-brand-gold/10"
                       : "border-brand-border hover:border-brand-gold/40"
                   )}
                 >
@@ -293,13 +293,13 @@ export function SchedulingSection() {
             <div className="mt-3 min-h-[120px]">
               {loadingSlots ? (
                 <SkeletonSlots />
-              ) : availableTimes.length === 0 ? (
+              ) : slots.length === 0 ? (
                 <p className="py-6 text-center text-sm text-brand-gray">
                   Nenhum horário disponível para essa data.
                 </p>
               ) : (
                 <TimeSlotGrid
-                  times={availableTimes}
+                  slots={slots}
                   selectedTime={time}
                   onSelect={setTime}
                 />

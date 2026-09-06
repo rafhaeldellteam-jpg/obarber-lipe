@@ -153,6 +153,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, message: "Escolha o plano e o barbeiro." }, { status: 400 });
     }
 
+    const { data: plan } = await supabaseAdmin
+      .from("plans")
+      .select("name, price")
+      .eq("id", planId)
+      .maybeSingle();
+
+    const { data: employee } = await supabaseAdmin
+      .from("employees")
+      .select("name, email")
+      .eq("id", employeeId)
+      .maybeSingle();
+
     const { error } = await supabaseAdmin
       .from("customer_subscriptions")
       .insert({
@@ -167,6 +179,26 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
     }
+
+    // Notifica o barbeiro escolhido para aprovar/recusar (melhor esforço)
+    if (employee?.email) {
+      try {
+        const { sendMail, emailTemplate, buttonHtml, siteUrl } = await import("@/lib/email");
+        await sendMail({
+          to: employee.email,
+          subject: `Solicitação de plano: ${customer.name} quer ativar ${plan?.name ?? "um plano"}`,
+          html: emailTemplate(`
+            <p style="margin:0 0 12px;">Olá, <strong>${employee.name}</strong>!</p>
+            <p style="margin:0 0 12px;">O cliente <strong>${customer.name}</strong> solicitou a ativação do plano <strong>${plan?.name ?? ""}</strong> (${plan?.price != null ? `R$ ${Number(plan.price).toFixed(2).replace(".", ",")}` : ""}) com você.</p>
+            <p style="margin:0;">Abra o painel para <strong>aprovar ou recusar</strong>. Ao aprovar, a contagem do plano começa na hora.</p>
+            ${buttonHtml(`${siteUrl}/admin`, "Abrir painel ✂️")}
+          `),
+        });
+      } catch {
+        // melhor esforço
+      }
+    }
+
     return NextResponse.json({ ok: true, message: "Solicitação enviada ao barbeiro!" }, { status: 201 });
   }
 

@@ -105,6 +105,18 @@ export default function MePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Aba via query param (ex.: /me?tab=feedbacks a partir do e-mail de feedback)
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("tab");
+    if (
+      param &&
+      ["agendamentos", "dias", "planos", "produtos", "feedbacks"].includes(param)
+    ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTab(param as MeTab);
+    }
+  }, []);
+
   // Aba Dias
   const [dayBarber, setDayBarber] = useState("");
   const [dayService, setDayService] = useState("");
