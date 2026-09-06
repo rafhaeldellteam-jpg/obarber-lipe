@@ -69,6 +69,14 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "Dados inválidos." }, { status: 400 });
   }
 
+  // Status anterior (para não debitar corte do plano em conclusão repetida)
+  const { data: previous } = await supabaseAdmin
+    .from("appointments")
+    .select("status")
+    .eq("id", body.id)
+    .maybeSingle();
+  const wasConcluded = previous?.status === "concluido";
+
   let query = supabaseAdmin
     .from("appointments")
     .update({ status: body.status })
@@ -93,6 +101,20 @@ export async function PATCH(request: NextRequest) {
       { ok: false, message: "Agendamento não encontrado." },
       { status: 404 }
     );
+  }
+
+  // Ao concluir o corte, debita 1 corte do plano ativo do cliente
+  // (melhor esforço: sem plano válido ou sem a coluna, apenas ignora)
+  if (body.status === "concluido" && !wasConcluded && data.client_email) {
+    try {
+      const { debitPlanCutForAppointment } = await import("@/lib/subscriptions");
+      await debitPlanCutForAppointment({
+        clientEmail: data.client_email,
+        employeeId: data.employee_id ?? null,
+      });
+    } catch {
+      // melhor esforço — não bloqueia a conclusão
+    }
   }
 
   // Ao concluir o corte, envia e-mail pedindo feedback (melhor esforço)

@@ -81,6 +81,7 @@ export type Subscription = {
   status: string;
   start_date: string | null;
   end_date: string | null;
+  cuts_used?: number | null;
   requested_at: string;
   created_at: string;
 };

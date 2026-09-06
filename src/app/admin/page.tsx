@@ -329,6 +329,9 @@ function ActivePlanList() {
                 {s.start_date ? `Início ${formatDateBR(s.start_date)}` : ""}
                 {s.end_date ? ` · até ${formatDateBR(s.end_date)}` : ""}
                 {s.plans ? ` · ${formatPrice(s.plans.price)}` : ""}
+                {s.plans?.cuts_per_period != null
+                  ? ` · ${s.cuts_used ?? 0}/${s.plans.cuts_per_period} cortes usados`
+                  : ""}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -2088,6 +2091,9 @@ function ClientsTab() {
                           {s.start_date ? `Início ${formatDateBR(s.start_date)}` : "Aguardando aprovação"}
                           {s.end_date ? ` · até ${formatDateBR(s.end_date)}` : ""}
                           {s.plans ? ` · ${formatPrice(s.plans.price)}` : ""}
+                          {s.status === "ativo" && s.plans?.cuts_per_period != null
+                            ? ` · ${s.cuts_used ?? 0}/${s.plans.cuts_per_period} cortes usados`
+                            : ""}
                         </div>
                         {s.status === "ativo" && s.end_date && (
                           <div className="mt-1.5 flex items-center gap-2">

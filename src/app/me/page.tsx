@@ -557,6 +557,17 @@ export default function MePage() {
                         <span className="font-normal text-brand-muted"> · {active.employees.name}</span>
                       ) : null}
                     </p>
+                    {active.plans?.cuts_per_period != null && (
+                      <p className="mt-2 inline-block rounded-lg border border-brand-border bg-brand-card px-3 py-1.5 text-sm">
+                        <span className="font-black text-emerald-400">
+                          {Math.max(
+                            0,
+                            active.plans.cuts_per_period - (active.cuts_used ?? 0)
+                          )}
+                        </span>{" "}
+                        de {active.plans.cuts_per_period} cortes disponíveis
+                      </p>
+                    )}
                     <div className="mt-4">
                       <PlanCountdown
                         endDate={active.end_date as string}
@@ -629,6 +640,14 @@ export default function MePage() {
                                 Início {formatDateBR(s.start_date)}
                                 {s.end_date ? ` · até ${formatDateBR(s.end_date)}` : ""}
                               </p>
+                              {s.plans?.cuts_per_period != null && (
+                                <p className="text-xs text-brand-muted">
+                                  Cortes usados:{" "}
+                                  <span className="font-bold text-brand-text">
+                                    {s.cuts_used ?? 0}/{s.plans.cuts_per_period}
+                                  </span>
+                                </p>
+                              )}
                               {s.end_date && (
                                 <PlanCountdown
                                   endDate={s.end_date}

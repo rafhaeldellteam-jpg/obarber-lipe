@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, hasServiceRole } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { expireOverdueSubscriptions } from "@/lib/subscriptions";
 
 export async function GET(request: NextRequest) {
   const ctx = await requireAdmin();
@@ -14,13 +15,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Expiração automática: planos vencidos saem de "ativo" antes de listar
+  await expireOverdueSubscriptions();
+
   const { searchParams } = new URL(request.url);
   const customerId = searchParams.get("customer_id");
   const status = searchParams.get("status");
 
   let query = supabaseAdmin
     .from("customer_subscriptions")
-    .select("*, plans(name, price), customers(name, phone)")
+    .select("*, plans(name, price, cuts_per_period), customers(name, phone)")
     .order("created_at", { ascending: false });
 
   if (ctx.isBarber && ctx.employeeId) {

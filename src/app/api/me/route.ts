@@ -21,6 +21,10 @@ export async function GET() {
 
   const email = user.email!;
 
+  // Expiração automática: planos vencidos saem de "ativo" antes de listar
+  const { expireOverdueSubscriptions } = await import("@/lib/subscriptions");
+  await expireOverdueSubscriptions();
+
   const customerRes = await supabase.from("customers").select("id").eq("email", email);
   const customerIds = customerRes.data?.map((c) => c.id) ?? [];
 
