@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/lib/AuthContext";
 import { useTheme } from "@/lib/ThemeContext";
+import { maskPhone, unmaskPhone } from "@/lib/utils";
 import {
   MoonIcon,
   SunIcon,
   MailIcon,
   LockIcon,
   UserIcon,
+  PhoneIcon,
   ShieldIcon,
   GoogleIcon,
   EyeIcon,
@@ -26,6 +28,7 @@ export function HomeAuth() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,7 +58,11 @@ export function HomeAuth() {
           setError("Informe seu nome (mínimo 2 letras).");
           return;
         }
-        const res = await signUp(email.trim(), password, name);
+        if (unmaskPhone(phone).length < 10) {
+          setError("Informe um celular válido com DDD.");
+          return;
+        }
+        const res = await signUp(email.trim(), password, name, unmaskPhone(phone));
         if (res.error) {
           setError(res.error);
         } else {
@@ -65,6 +72,7 @@ export function HomeAuth() {
           setMode("login");
           setName("");
           setPassword("");
+          setPhone("");
         }
       }
     } finally {
@@ -183,6 +191,25 @@ export function HomeAuth() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Seu nome"
+                    className="w-full rounded-xl border border-brand-border bg-brand-darker py-3 pl-10 pr-4 text-sm text-brand-text placeholder:text-brand-muted/60 btn-focus"
+                    required={mode === "register"}
+                  />
+                </div>
+              </div>
+            )}
+
+            {mode === "register" && (
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-brand-muted">
+                  Celular (WhatsApp)
+                </label>
+                <div className="relative">
+                  <PhoneIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(maskPhone(e.target.value))}
+                    placeholder="(11) 99999-9999"
                     className="w-full rounded-xl border border-brand-border bg-brand-darker py-3 pl-10 pr-4 text-sm text-brand-text placeholder:text-brand-muted/60 btn-focus"
                     required={mode === "register"}
                   />

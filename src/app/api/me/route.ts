@@ -107,7 +107,9 @@ export async function POST(request: NextRequest) {
   const action = String(body.action ?? "");
   const email = user.email!;
   const name = user.user_metadata?.name ?? null;
-  const phone = String(body.phone ?? "").replace(/\D/g, "");
+  const metadataPhone = String(user.user_metadata?.phone ?? "").replace(/\D/g, "");
+  const phone =
+    String(body.phone ?? "").replace(/\D/g, "") || metadataPhone;
 
   // Garante um registro de cliente vinculado à conta do usuário
   let customer = (
@@ -128,6 +130,15 @@ export async function POST(request: NextRequest) {
         .select("*")
         .single()
     ).data;
+  } else if (phone && !customer.phone) {
+    // Sincroniza o celular capturado no cadastro (ou metadata do Google)
+    const updated = await supabaseAdmin
+      .from("customers")
+      .update({ phone })
+      .eq("id", customer.id)
+      .select("*")
+      .single();
+    customer = updated.data ?? customer;
   }
   if (!customer) {
     return NextResponse.json({ ok: false, message: "Não foi possível identificar o cliente." }, { status: 500 });

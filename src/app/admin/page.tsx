@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/AuthContext";
 import type {
   AppointmentWithRelations,
@@ -25,6 +26,7 @@ import { buildWhatsAppLink, statusWhatsAppMessage } from "@/lib/whatsapp";
 import { STATUS_LABELS } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { Loading } from "@/components/Loading";
+import { PlanCountdown } from "@/components/plan/PlanCountdown";
 import {
   CalendarIcon,
   BarberPoleIcon,
@@ -42,6 +44,7 @@ import {
 type Tab =
   | "hoje"
   | "agendamentos"
+  | "feedbacks"
   | "historico"
   | "clientes"
   | "servicos"
@@ -53,6 +56,7 @@ type Tab =
 const TABS: { id: Tab; label: string }[] = [
   { id: "hoje", label: "Hoje" },
   { id: "agendamentos", label: "Agendamentos" },
+  { id: "feedbacks", label: "Feedbacks" },
   { id: "historico", label: "Histórico" },
   { id: "clientes", label: "Clientes" },
   { id: "servicos", label: "Serviços" },
@@ -101,6 +105,8 @@ function Badge({ status }: { status: string }) {
     </span>
   );
 }
+
+const FeedbackModeration = dynamic(() => import("@/components/feedback/FeedbackModeration"));
 
 export default function AdminPage() {
   const { user, isAdmin, loading, signOut, role } = useAuth();
@@ -181,6 +187,7 @@ export default function AdminPage() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {currentTab === "hoje" && <TodayTab />}
         {currentTab === "agendamentos" && <AppointmentsTab />}
+        {currentTab === "feedbacks" && <FeedbackModeration />}
         {currentTab === "historico" && <HistoryTab />}
         {currentTab === "clientes" && <ClientsTab />}
         {currentTab === "servicos" && <ServicesTab />}
@@ -1931,6 +1938,14 @@ function ClientsTab() {
                           {s.end_date ? ` · até ${formatDateBR(s.end_date)}` : ""}
                           {s.plans ? ` · ${formatPrice(s.plans.price)}` : ""}
                         </div>
+                        {s.status === "ativo" && s.end_date && (
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gray">
+                              Expira em
+                            </span>
+                            <PlanCountdown endDate={s.end_date} compact />
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge status={s.status} />

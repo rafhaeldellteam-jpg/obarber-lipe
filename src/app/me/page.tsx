@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useTheme } from "@/lib/ThemeContext";
 import { Loading } from "@/components/Loading";
+import { PlanCountdown } from "@/components/plan/PlanCountdown";
+import { RequestPlanModal } from "@/components/plan/RequestPlanModal";
+import { FeedbackForm } from "@/components/feedback/FeedbackForm";
+import { FeedbackShowcase } from "@/components/feedback/FeedbackShowcase";
 import { formatDateBR, formatPrice, today } from "@/lib/utils";
 import { STATUS_LABELS } from "@/lib/config";
 import type {
@@ -80,13 +84,6 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-function daysRemaining(endDate?: string | null): number | null {
-  if (!endDate) return null;
-  const end = new Date(endDate + "T23:59:59").getTime();
-  const diff = Math.ceil((end - Date.now()) / 86400000);
-  return diff >= 0 ? diff : null;
-}
-
 function dayLabel(date: string) {
   const [y, m, d] = date.split("-").map(Number);
   const dObj = new Date(y, m - 1, d);
@@ -94,7 +91,7 @@ function dayLabel(date: string) {
   return `${names[dObj.getDay()]}`;
 }
 
-type MeTab = "agendamentos" | "dias" | "planos" | "produtos";
+type MeTab = "agendamentos" | "dias" | "planos" | "produtos" | "feedbacks";
 
 export default function MePage() {
   const { user, loading, signOut, role } = useAuth();
@@ -116,6 +113,10 @@ export default function MePage() {
 
   // Aba Planos / Produtos
   const [reqBarber, setReqBarber] = useState("");
+  const [planModal, setPlanModal] = useState<{ open: boolean; planId: string }>({
+    open: false,
+    planId: "",
+  });
 
   const isStaff = role === "barber" || role === "master" || role === "admin";
 
@@ -189,8 +190,8 @@ export default function MePage() {
     }
   };
 
-  const requestPlan = async (planId: string) => {
-    if (!reqBarber) {
+  const requestPlan = async (planId: string, employeeId: string) => {
+    if (!employeeId) {
       setToast("Escolha o barbeiro para ativar o plano.");
       return;
     }
@@ -199,12 +200,12 @@ export default function MePage() {
       const res = await fetch("/api/me", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "request_plan", plan_id: planId, employee_id: reqBarber }),
+        body: JSON.stringify({ action: "request_plan", plan_id: planId, employee_id: employeeId }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Erro ao solicitar.");
       setToast(json.message ?? "Solicitação enviada!");
-      setReqBarber("");
+      setPlanModal({ open: false, planId: "" });
       await loadMe();
     } catch (e) {
       setToast((e as Error).message);
@@ -271,6 +272,7 @@ export default function MePage() {
     dias: "Dias",
     planos: "Planos",
     produtos: "Produtos",
+    feedbacks: "Feedbacks",
   };
 
   return (
@@ -339,7 +341,7 @@ export default function MePage() {
           )}
 
           {/* Navegação */}
-          <div className="mt-6 grid grid-cols-4 gap-1 rounded-xl bg-brand-darker p-1">
+          <div className="mt-6 grid grid-cols-3 gap-1 rounded-xl bg-brand-darker p-1 sm:grid-cols-5">
             {(Object.keys(TAB_STYLES) as Array<keyof typeof TAB_STYLES>).map((t) => (
               <button
                 key={t}
@@ -529,7 +531,7 @@ export default function MePage() {
                   <CreditCardIcon className="h-5 w-5 text-brand-orange" /> Planos disponíveis
                 </h2>
                 <p className="mt-1 text-sm text-brand-muted">
-                  Escolha o plano e o barbeiro. Ele aprova a ativação no painel dele e a contagem de dias começa.
+                  Escolha o plano e o barbeiro. Ele aprova no painel dele e a contagem começa na hora.
                 </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {(data?.plans ?? []).map((p) => (
@@ -540,22 +542,12 @@ export default function MePage() {
                         {p.cuts_per_period} cortes / {p.duration_days} dias
                       </div>
                       <p className="mt-2 text-xl font-black text-brand-orange">{formatPrice(p.price)}</p>
-                      <select
-                        value={reqBarber}
-                        onChange={(e) => setReqBarber(e.target.value)}
-                        className="mt-3 w-full rounded-lg border border-brand-border bg-brand-darker px-3 py-2 text-sm text-brand-text btn-focus"
-                      >
-                        <option value="">Barbeiro…</option>
-                        {(data?.employees ?? []).map((e) => (
-                          <option key={e.id} value={e.id}>{e.name}</option>
-                        ))}
-                      </select>
                       <button
-                        onClick={() => void requestPlan(p.id)}
+                        onClick={() => setPlanModal({ open: true, planId: p.id })}
                         disabled={busy}
                         className="mt-3 w-full rounded-lg bg-gold-gradient px-4 py-2.5 text-sm font-black text-zinc-950 btn-focus disabled:opacity-50"
                       >
-                        Solicitar ativação
+                        Ativar este plano
                       </button>
                     </div>
                   ))}
@@ -573,7 +565,6 @@ export default function MePage() {
                 ) : (
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {mySubscriptions.map((s) => {
-                      const remaining = daysRemaining(s.end_date);
                       return (
                         <div key={s.id} className="rounded-2xl border border-brand-border bg-brand-card p-5">
                           <div className="flex items-center justify-between gap-2">
@@ -589,15 +580,16 @@ export default function MePage() {
                             </p>
                           )}
                           {s.status === "ativo" && s.start_date && (
-                            <div className="mt-3 space-y-1 text-sm">
+                            <div className="mt-3 space-y-2 text-sm">
                               <p className="text-brand-muted">
                                 Início {formatDateBR(s.start_date)}
                                 {s.end_date ? ` · até ${formatDateBR(s.end_date)}` : ""}
                               </p>
-                              {remaining != null && (
-                                <p className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-300">
-                                  Faltam {remaining} dia{remaining === 1 ? "" : "s"}
-                                </p>
+                              {s.end_date && (
+                                <PlanCountdown
+                                  endDate={s.end_date}
+                                  startDate={s.start_date}
+                                />
                               )}
                             </div>
                           )}
@@ -684,6 +676,16 @@ export default function MePage() {
               </section>
             </>
           )}
+
+          {/* ============ FEEDBACKS ============ */}
+          {tab === "feedbacks" && (
+            <div className="mt-8 grid items-start gap-5 lg:grid-cols-[380px_1fr]">
+              <FeedbackForm
+                onSuccess={(msg) => setToast(msg)}
+              />
+              <FeedbackShowcase />
+            </div>
+          )}
         </section>
 
         <div className="mx-auto max-w-5xl pb-8 pr-4 sm:pr-6">
@@ -695,6 +697,17 @@ export default function MePage() {
           </Link>
         </div>
       </div>
+
+      {planModal.open && (
+        <RequestPlanModal
+          plans={data?.plans ?? []}
+          employees={data?.employees ?? []}
+          busy={busy}
+          initialPlanId={planModal.planId}
+          onClose={() => setPlanModal({ open: false, planId: "" })}
+          onSubmit={(planId, employeeId) => void requestPlan(planId, employeeId)}
+        />
+      )}
     </main>
   );
 }

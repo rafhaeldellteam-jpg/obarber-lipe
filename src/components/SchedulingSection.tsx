@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Service, Employee, AvailableSlot } from "@/lib/types";
-import { maskPhone, unmaskPhone, today, addDays, formatDateBR } from "@/lib/utils";
+import { maskPhone, unmaskPhone, today, formatDateBR } from "@/lib/utils";
 import { buildWhatsAppLink, confirmMessage } from "@/lib/whatsapp";
 import { OWNER_WHATSAPP } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "@/components/icons";
 import { SkeletonSlots } from "@/components/Loading";
+import { DayStrip } from "@/components/scheduling/DayStrip";
+import { TimeSlotGrid } from "@/components/scheduling/TimeSlotGrid";
+import { BarberAvailabilityCard } from "@/components/scheduling/BarberAvailabilityCard";
 
 type SlotModal = {
   clientName: string;
@@ -38,7 +41,6 @@ export function SchedulingSection() {
   const [modal, setModal] = useState<SlotModal | null>(null);
 
   const minDate = today();
-  const maxDate = addDays(today(), 30);
 
   const fetchAvailability = useCallback(async (emp: string, dt: string) => {
     try {
@@ -185,37 +187,51 @@ export function SchedulingSection() {
             <h3 className="text-sm font-bold uppercase tracking-wider text-brand-gray">
               1 · Profissional
             </h3>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 flex snap-x gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button
                 type="button"
                 aria-pressed={anyEmployee}
                 onClick={() => onEmployeeChange("any")}
                 className={cn(
-                  "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors btn-focus",
+                  "flex min-w-[150px] shrink-0 snap-start items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-200 btn-focus",
                   anyEmployee
-                    ? "border-brand-gold bg-brand-gold/15 text-brand-gold"
-                    : "border-brand-border text-brand-gray hover:border-brand-gold/40 hover:text-brand-text"
+                    ? "border-brand-gold bg-brand-gold/10 ring-2 ring-brand-gold/60 shadow-lg shadow-brand-gold/10"
+                    : "border-brand-border bg-brand-card hover:border-brand-gold/40 hover:scale-[1.02]"
                 )}
               >
-                Qualquer profissional
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-darker text-base text-brand-gray">
+                  ★
+                </span>
+                <span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold">Qualquer um</span>
+                    {anyEmployee && <CheckIcon className="h-4 w-4 text-brand-gold" />}
+                  </span>
+                  <span className="block text-xs text-brand-gray">
+                    Primeiro disponível
+                  </span>
+                </span>
               </button>
-              {employees.map((emp) => (
-                <button
+              {employees.map((emp, i) => (
+                <BarberAvailabilityCard
                   key={emp.id}
-                  type="button"
-                  aria-pressed={!anyEmployee && employeeId === emp.id}
-                  onClick={() => onEmployeeChange(emp.id)}
-                  className={cn(
-                    "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors btn-focus",
-                    !anyEmployee && employeeId === emp.id
-                      ? "border-brand-gold bg-brand-gold/15 text-brand-gold"
-                      : "border-brand-border text-brand-gray hover:border-brand-gold/40 hover:text-brand-text"
-                  )}
-                >
-                  {emp.name}
-                </button>
+                  employee={emp}
+                  index={i}
+                  selected={!anyEmployee && employeeId === emp.id}
+                  onSelect={() => onEmployeeChange(emp.id)}
+                />
               ))}
-              {employees.length === 0 && (
+              {employees.length === 0 && loadingSlots && (
+                <div className="flex gap-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-[76px] w-[170px] shrink-0 animate-pulse rounded-2xl bg-brand-border/50"
+                    />
+                  ))}
+                </div>
+              )}
+              {employees.length === 0 && !loadingSlots && (
                 <p className="text-sm text-brand-gray">
                   Nenhum profissional cadastrado no momento.
                 </p>
@@ -266,44 +282,28 @@ export function SchedulingSection() {
             <h3 className="text-sm font-bold uppercase tracking-wider text-brand-gray">
               3 · Data e horário
             </h3>
-            <div className="mt-3 grid gap-4 sm:grid-cols-[200px_1fr]">
-              <input
-                type="date"
-                value={date}
-                min={minDate}
-                max={maxDate}
-                onChange={(e) => onDateChange(e.target.value)}
-                className="rounded-xl border border-brand-border bg-brand-darker px-4 py-3 text-sm text-brand-text btn-focus"
-                aria-label="Data do agendamento"
+            <div className="mt-3">
+              <DayStrip
+                selectedDate={date}
+                minDate={minDate}
+                maxDays={30}
+                onSelect={onDateChange}
               />
-              <div className="min-h-[120px]">
-                {loadingSlots ? (
-                  <SkeletonSlots />
-                ) : availableTimes.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-brand-gray">
-                    Nenhum horário disponível para essa data.
-                  </p>
-                ) : (
-                  <div className="grid max-h-44 grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-6">
-                    {availableTimes.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        aria-pressed={time === t}
-                        onClick={() => setTime(t)}
-                        className={cn(
-                          "rounded-lg border px-2 py-2 text-xs font-bold transition-colors btn-focus",
-                          time === t
-                            ? "border-brand-gold bg-gold-gradient text-zinc-950"
-                            : "border-brand-border text-brand-gray hover:border-brand-gold/50 hover:text-brand-text"
-                        )}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+            </div>
+            <div className="mt-3 min-h-[120px]">
+              {loadingSlots ? (
+                <SkeletonSlots />
+              ) : availableTimes.length === 0 ? (
+                <p className="py-6 text-center text-sm text-brand-gray">
+                  Nenhum horário disponível para essa data.
+                </p>
+              ) : (
+                <TimeSlotGrid
+                  times={availableTimes}
+                  selectedTime={time}
+                  onSelect={setTime}
+                />
+              )}
             </div>
           </div>
 

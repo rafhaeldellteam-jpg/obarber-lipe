@@ -24,7 +24,8 @@ type AuthContextValue = {
   signUp: (
     email: string,
     password: string,
-    name?: string
+    name?: string,
+    phone?: string
   ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -91,13 +92,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [getSupabase]);
 
   const signUp = useCallback(
-    async (email: string, password: string, name?: string) => {
+    async (email: string, password: string, name?: string, phone?: string) => {
       const { error } = await getSupabase().auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
-          data: name ? { name: name.trim() } : undefined,
+          data: {
+            ...(name ? { name: name.trim() } : {}),
+            ...(phone ? { phone: phone.trim() } : {}),
+          },
         },
       });
       return { error: error ? error.message : null };

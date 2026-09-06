@@ -115,6 +115,49 @@ body {
   animation: fadeIn 0.4s ease both;
 }
 
+@keyframes slotPop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slot-pop {
+  animation: slotPop 0.25s ease both;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease both;
+}
+
+.stagger-delay {
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slot-pop,
+  .animate-slide-in-right,
+  .animate-fade-in-up,
+  .animate-fade-in {
+    animation: none;
+  }
+}
+
 .text-gradient-brand {
   background: linear-gradient(135deg, var(--brand-orange-light) 0%, var(--brand-orange) 50%, var(--brand-orange-dark) 100%);
   -webkit-background-clip: text;
