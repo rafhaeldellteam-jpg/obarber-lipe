@@ -43,7 +43,12 @@ export async function sendMail(options: {
     );
     return false;
   }
-  try {
+
+  // Erros transitórios de rede/DNS (vistos em lambdas: EBUSY, EAI_AGAIN...)
+  // merecem retry — a falha não é de configuração.
+  const TRANSIENT = /EBUSY|EAI_AGAIN|ECONNRESET|ETIMEDOUT|ECONNREFUSED|socket/i;
+
+  const attempt = async (): Promise<boolean> => {
     await transport.sendMail({
       from:
         process.env.SMTP_FROM ||
@@ -53,10 +58,23 @@ export async function sendMail(options: {
       html: options.html,
     });
     return true;
-  } catch (err) {
-    console.error("[email] Falha ao enviar:", (err as Error).message);
-    return false;
+  };
+
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await attempt();
+    } catch (err) {
+      const msg = (err as Error).message ?? "";
+      const isLast = i === 2;
+      console.error(
+        `[email] Falha ao enviar (tentativa ${i + 1}/3):`,
+        msg
+      );
+      if (isLast || !TRANSIENT.test(msg)) return false;
+      await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
   }
+  return false;
 }
 
 /** Envolve o conteúdo em um template HTML com a identidade da barbearia. */

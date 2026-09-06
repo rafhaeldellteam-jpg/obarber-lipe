@@ -1,5 +1,15 @@
 import { supabaseAdmin } from "@/lib/supabase";
 
+/** Executa uma query com 1 retry em falha transitória de rede/DNS. */
+async function withRetry<T>(
+  run: () => PromiseLike<{ data: T | null; error: { message: string } | null }>
+): Promise<{ data: T | null; error: { message: string } | null }> {
+  const first = await Promise.resolve(run());
+  if (!first.error) return first;
+  await new Promise((r) => setTimeout(r, 1200));
+  return Promise.resolve(run());
+}
+
 /**
  * Expiração automática: vira para "expirado" toda assinatura
  * ativa cujo end_date já passou. Idempotente e barato — pode ser
@@ -30,10 +40,9 @@ export async function debitPlanCutForAppointment(params: {
   const { clientEmail, employeeId } = params;
 
   // Localiza o cliente pelo e-mail do agendamento
-  const { data: customers } = await supabaseAdmin
-    .from("customers")
-    .select("id")
-    .eq("email", clientEmail);
+  const { data: customers } = await withRetry(() =>
+    supabaseAdmin.from("customers").select("id").eq("email", clientEmail)
+  );
   const customerIds = (customers ?? []).map((c) => c.id);
   if (customerIds.length === 0) return;
 
@@ -45,12 +54,14 @@ export async function debitPlanCutForAppointment(params: {
     cuts_used: number | null;
     plans: { cuts_per_period: number } | null;
   };
-  const subRes = await supabaseAdmin
-    .from("customer_subscriptions")
-    .select("id, employee_id, cuts_used, plans(cuts_per_period)")
-    .eq("status", "ativo")
-    .in("customer_id", customerIds)
-    .gte("end_date", today);
+  const subRes = await withRetry(() =>
+    supabaseAdmin
+      .from("customer_subscriptions")
+      .select("id, employee_id, cuts_used, plans(cuts_per_period)")
+      .eq("status", "ativo")
+      .in("customer_id", customerIds)
+      .gte("end_date", today)
+  );
   if (subRes.error) {
     // Schema antigo sem cuts_used: sem débito possível
     console.warn("[subscriptions] cuts_used indisponível:", subRes.error.message);
@@ -70,11 +81,13 @@ export async function debitPlanCutForAppointment(params: {
   if (used >= maxCuts) return; // plano esgotado: não debita
 
   // Incremento otimista: só atualiza se cuts_used ainda for o lido
-  const { error: updError } = await supabaseAdmin
-    .from("customer_subscriptions")
-    .update({ cuts_used: used + 1 })
-    .eq("id", sub.id)
-    .eq("cuts_used", used);
+  const { error: updError } = await withRetry(() =>
+    supabaseAdmin
+      .from("customer_subscriptions")
+      .update({ cuts_used: used + 1 })
+      .eq("id", sub.id)
+      .eq("cuts_used", used)
+  );
   if (updError) {
     console.warn("[subscriptions] Falha ao debitar corte:", updError.message);
   }
