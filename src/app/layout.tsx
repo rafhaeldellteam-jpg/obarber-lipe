@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { PwaRegister } from "@/components/PwaRegister";
+import { ErrorReporter } from "@/components/ErrorReporter";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
         <PwaRegister />
+        <ErrorReporter />
       </body>
     </html>
   );
