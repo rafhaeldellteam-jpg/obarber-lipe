@@ -105,6 +105,13 @@ export default function MePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Notificação flutuante some sozinha após 4s
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(id);
+  }, [toast]);
+
   // Aba via query param (ex.: /me?tab=feedbacks a partir do e-mail de feedback)
   useEffect(() => {
     const param = new URLSearchParams(window.location.search).get("tab");
@@ -346,13 +353,6 @@ export default function MePage() {
             </p>
           )}
 
-          {toast && (
-            <p className="mt-4 flex items-center gap-2 rounded-xl border border-brand-green/30 bg-brand-green/10 px-4 py-3 text-sm text-brand-green">
-              <CheckIcon className="h-4 w-4 shrink-0" /> {toast}
-            </p>
-          )}
-
-          {/* Navegação */}
           <div className="mt-6 grid grid-cols-3 gap-1 rounded-xl bg-brand-darker p-1 sm:grid-cols-5">
             {(Object.keys(TAB_STYLES) as Array<keyof typeof TAB_STYLES>).map((t) => (
               <button
@@ -719,6 +719,15 @@ export default function MePage() {
           onClose={() => setPlanModal({ open: false, planId: "" })}
           onSubmit={(planId, employeeId) => void requestPlan(planId, employeeId)}
         />
+      )}
+
+      {/* Notificação flutuante (acima de modais) */}
+      {toast && (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-[100] w-full max-w-sm -translate-x-1/2 px-4">
+          <p className="animate-fade-in-up flex items-center gap-2 rounded-xl border border-brand-green/40 bg-brand-card px-4 py-3 text-sm font-semibold text-brand-green shadow-2xl">
+            <CheckIcon className="h-4 w-4 shrink-0" /> {toast}
+          </p>
+        </div>
       )}
     </main>
   );

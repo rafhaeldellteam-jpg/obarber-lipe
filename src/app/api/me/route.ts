@@ -127,19 +127,26 @@ export async function POST(request: NextRequest) {
   }
   if (!customer) {
     const signupMethod = signupMethodFromUser(user);
-    const insertFields: Record<string, unknown> = {
+    // Tenta com todos os campos; se o banco tiver schema antigo,
+    // repete sem as colunas opcionais (signup_method, phone).
+    const baseFields: Record<string, unknown> = {
       name: name ?? email.split("@")[0],
       email,
-      signup_method: signupMethod,
     };
-    if (phone) insertFields.phone = phone;
-    const inserted = await supabaseAdmin
+    let inserted = await supabaseAdmin
       .from("customers")
-      .insert(insertFields)
+      .insert({ ...baseFields, signup_method: signupMethod, ...(phone ? { phone } : {}) })
       .select("*")
       .single();
-    if (inserted.error || !inserted.data) {
-      console.error("[api/me] Falha ao criar customer:", inserted.error?.message);
+    if (inserted.error) {
+      inserted = await supabaseAdmin
+        .from("customers")
+        .insert(baseFields)
+        .select("*")
+        .single();
+    }
+    if (inserted.error) {
+      console.error("[api/me] Falha ao criar customer:", inserted.error.message);
       // Pode ser corrida/uniq: tenta localizar novamente
       const { data: retryRows } = await supabaseAdmin
         .from("customers")
@@ -152,9 +159,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             ok: false,
-            message: `Não foi possível criar seu cadastro de cliente: ${
-              inserted.error?.message ?? "erro desconhecido"
-            }`,
+            message: `Não foi possível criar seu cadastro de cliente: ${inserted.error.message}`,
           },
           { status: 500 }
         );
@@ -163,7 +168,8 @@ export async function POST(request: NextRequest) {
       customer = inserted.data;
     }
   } else if (phone && !customer.phone) {
-    // Sincroniza o celular capturado no cadastro (ou metadata do Google)
+    // Sincroniza o celular capturado no cadastro (ou metadata do Google).
+    // Se a coluna phone não existir no banco, apenas ignora.
     const updated = await supabaseAdmin
       .from("customers")
       .update({ phone })
