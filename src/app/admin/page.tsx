@@ -283,6 +283,69 @@ function PendingPlanRequests() {
   );
 }
 
+function ActivePlanList() {
+  const [items, setItems] = useState<SubscriptionWithRelations[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await api<SubscriptionWithRelations[]>(
+        "/api/admin/subscriptions?status=ativo"
+      );
+      setItems(res.data ?? []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => void load(), [load]);
+
+  if (loading) return null;
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-6 rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-5">
+      <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-emerald-300">
+        <CreditCardIcon className="h-4 w-4" />
+        Planos ativos ({items.length})
+      </h4>
+      <p className="mt-1 text-xs text-brand-gray">
+        Assinaturas em vigor com o tempo restante de cada plano em tempo real.
+      </p>
+      <div className="mt-3 space-y-2">
+        {items.map((s) => (
+          <div
+            key={s.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-border bg-brand-card px-4 py-3 text-sm"
+          >
+            <div>
+              <div className="font-semibold">
+                {s.customers?.name ?? "Cliente"} · {s.plans?.name ?? "Plano"}
+              </div>
+              <div className="text-xs text-brand-gray">
+                {s.start_date ? `Início ${formatDateBR(s.start_date)}` : ""}
+                {s.end_date ? ` · até ${formatDateBR(s.end_date)}` : ""}
+                {s.plans ? ` · ${formatPrice(s.plans.price)}` : ""}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {s.end_date ? (
+                <PlanCountdown endDate={s.end_date} compact />
+              ) : (
+                <span className="text-xs text-brand-gray">Sem prazo</span>
+              )}
+              <Badge status={s.status} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TodayTab() {
   const [items, setItems] = useState<AppointmentWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
@@ -329,6 +392,7 @@ function TodayTab() {
       />
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       <PendingPlanRequests />
+      <ActivePlanList />
       {loading ? (
         <EmptyState text="Carregando…" />
       ) : sorted.length === 0 ? (

@@ -538,6 +538,38 @@ export default function MePage() {
           {/* ============ PLANOS ============ */}
           {tab === "planos" && (
             <>
+              {(() => {
+                const active = mySubscriptions.find(
+                  (s) => s.status === "ativo" && s.end_date
+                );
+                if (!active) return null;
+                return (
+                  <section className="mt-8 overflow-hidden rounded-2xl border border-emerald-400/40 bg-gradient-to-b from-emerald-400/10 to-transparent p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2 className="flex items-center gap-2 text-lg font-black">
+                        <CreditCardIcon className="h-5 w-5 text-emerald-400" /> Seu plano está ativo
+                      </h2>
+                      <StatusPill status="ativo" />
+                    </div>
+                    <p className="mt-1 text-sm font-bold">
+                      {active.plans?.name ?? "Plano"}
+                      {active.employees?.name ? (
+                        <span className="font-normal text-brand-muted"> · {active.employees.name}</span>
+                      ) : null}
+                    </p>
+                    <div className="mt-4">
+                      <PlanCountdown
+                        endDate={active.end_date as string}
+                        startDate={active.start_date}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-brand-muted">
+                      Válido até {formatDateBR(active.end_date as string)} · Agende seus cortes normalmente.
+                    </p>
+                  </section>
+                );
+              })()}
+
               <section className="mt-8">
                 <h2 className="flex items-center gap-2 text-lg font-black">
                   <CreditCardIcon className="h-5 w-5 text-brand-orange" /> Planos disponíveis
