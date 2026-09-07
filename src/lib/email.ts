@@ -27,7 +27,45 @@ function getTransporter(): typeof transporter {
 }
 
 export function emailConfigured(): boolean {
-  return getTransporter() !== null;
+  return Boolean(process.env.BREVO_API_KEY) || getTransporter() !== null;
+}
+
+/** Remetente: "Nome <email>" → email puro (a API do Brevo quer separado). */
+function senderEmail(): string {
+  const raw = process.env.SMTP_FROM || process.env.SMTP_USER || "";
+  const m = raw.match(/<([^>]+)>/);
+  return m ? m[1] : raw;
+}
+
+/**
+ * Envio via API HTTP do Brevo. É o caminho preferido em serverless:
+ * conexões SMTP diretas sofrem falhas de DNS (EBUSY) nas lambdas da
+ * Vercel, enquanto HTTPS passa pelo mesmo canal das demais chamadas.
+ */
+async function sendViaBrevoApi(options: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<boolean> {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": process.env.BREVO_API_KEY ?? "",
+      "Content-Type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "Obarber Lipe", email: senderEmail() },
+      to: [{ email: options.to }],
+      subject: options.subject,
+      htmlContent: options.html,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Brevo API ${res.status}: ${body.slice(0, 200)}`);
+  }
+  return true;
 }
 
 export async function sendMail(options: {
@@ -35,21 +73,22 @@ export async function sendMail(options: {
   subject: string;
   html: string;
 }): Promise<boolean> {
+  const useApi = Boolean(process.env.BREVO_API_KEY);
   const transport = getTransporter();
-  if (!transport) {
+  if (!useApi && !transport) {
     console.warn(
-      "[email] SMTP não configurado (SMTP_HOST/SMTP_USER/SMTP_PASS). E-mail não enviado:",
+      "[email] Envio não configurado (BREVO_API_KEY ou SMTP_*). E-mail não enviado:",
       options.subject
     );
     return false;
   }
 
-  // Erros transitórios de rede/DNS (vistos em lambdas: EBUSY, EAI_AGAIN...)
-  // merecem retry — a falha não é de configuração.
-  const TRANSIENT = /EBUSY|EAI_AGAIN|ECONNRESET|ETIMEDOUT|ECONNREFUSED|socket/i;
+  // Erros transitórios de rede/DNS merecem retry — a falha não é de configuração.
+  const TRANSIENT = /EBUSY|EAI_AGAIN|ECONNRESET|ETIMEDOUT|ECONNREFUSED|socket|network|fetch failed/i;
 
   const attempt = async (): Promise<boolean> => {
-    await transport.sendMail({
+    if (useApi) return await sendViaBrevoApi(options);
+    await transport!.sendMail({
       from:
         process.env.SMTP_FROM ||
         `Obarber Lipe <${process.env.SMTP_USER}>`,
