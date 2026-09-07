@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { OWNER_WHATSAPP } from "@/lib/config";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
@@ -8,9 +9,13 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-lg bg-gold-gradient font-black text-zinc-950">
-                L
-              </span>
+              <Image
+                src="/icon-192.png"
+                alt="Obarber Lipe"
+                width={36}
+                height={36}
+                className="h-9 w-9 rounded-full"
+              />
               <span className="text-lg font-bold">
                 Obarber <span className="text-brand-gold">Lipe</span>
               </span>

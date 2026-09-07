@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/lib/AuthContext";
 import { useTheme } from "@/lib/ThemeContext";
 import { MoonIcon, SunIcon } from "@/components/icons";
@@ -16,9 +17,14 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-brand-border bg-brand-black/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href={user ? painelHref : "/"} className="flex items-center gap-2 btn-focus rounded-lg">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gold-gradient font-black text-zinc-950">
-            L
-          </span>
+          <Image
+            src="/icon-192.png"
+            alt="Obarber Lipe"
+            width={36}
+            height={36}
+            priority
+            className="h-9 w-9 rounded-full"
+          />
           <span className="text-lg font-bold tracking-tight">
             Obarber <span className="text-brand-gold">Lipe</span>
           </span>

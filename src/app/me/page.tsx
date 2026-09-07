@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useTheme } from "@/lib/ThemeContext";
@@ -299,9 +300,14 @@ export default function MePage() {
       <header className="sticky top-0 z-40 border-b border-brand-border bg-brand-black/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
           <Link href="/me" className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-gold-gradient font-black text-zinc-950">
-              L
-            </span>
+            <Image
+              src="/icon-192.png"
+              alt="Obarber Lipe"
+              width={36}
+              height={36}
+              priority
+              className="h-9 w-9 rounded-full"
+            />
             <div className="leading-tight">
               <div className="text-sm font-black">
                 Obarber <span className="text-brand-gold">Lipe</span>
