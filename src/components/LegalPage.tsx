@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { ArrowLeftIcon } from "@/components/icons";
 
 type Section = {
   title: string;
@@ -24,7 +25,9 @@ export function LegalPage({
           href="/"
           className="text-sm font-semibold text-brand-gold hover:underline btn-focus rounded"
         >
-          ← Voltar ao início
+          <span className="inline-flex items-center gap-1.5">
+            <ArrowLeftIcon className="h-4 w-4" /> Voltar ao início
+          </span>
         </Link>
         <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
           {title}

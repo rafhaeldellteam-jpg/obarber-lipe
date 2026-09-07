@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
             <p style="margin:0 0 12px;">Olá, <strong>${employee.name}</strong>!</p>
             <p style="margin:0 0 12px;">O cliente <strong>${customer.name}</strong> solicitou a ativação do plano <strong>${plan?.name ?? ""}</strong> (${plan?.price != null ? `R$ ${Number(plan.price).toFixed(2).replace(".", ",")}` : ""}) com você.</p>
             <p style="margin:0;">Abra o painel para <strong>aprovar ou recusar</strong>. Ao aprovar, a contagem do plano começa na hora.</p>
-            ${buttonHtml(`${siteUrl}/admin`, "Abrir painel ✂️")}
+            ${buttonHtml(`${siteUrl}/admin`, "Abrir painel")}
           `),
         });
       } catch {

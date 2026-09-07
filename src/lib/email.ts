@@ -30,7 +30,7 @@ export function emailConfigured(): boolean {
   return Boolean(process.env.BREVO_API_KEY) || getTransporter() !== null;
 }
 
-/** Remetente: "Nome <email>" → email puro (a API do Brevo quer separado). */
+/** Remetente: "Nome <email>" vira apenas o e-mail puro (a API do Brevo exige separado). */
 function senderEmail(): string {
   const raw = process.env.SMTP_FROM || process.env.SMTP_USER || "";
   const m = raw.match(/<([^>]+)>/);

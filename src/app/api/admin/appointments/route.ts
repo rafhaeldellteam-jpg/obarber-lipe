@@ -125,12 +125,12 @@ export async function PATCH(request: NextRequest) {
       const dateBR = data.appointment_date?.split("-").reverse().join("/") ?? "";
       await sendMail({
         to: data.client_email,
-        subject: `Como foi seu corte na Obarber Lipe? ⭐`,
+        subject: `Como foi seu corte na Obarber Lipe?`,
         html: emailTemplate(`
           <p style="margin:0 0 12px;">Olá, <strong>${data.client_name ?? ""}</strong>!</p>
-          <p style="margin:0 0 12px;">Seu corte com <strong>${employeeName}</strong> em ${dateBR} às ${data.appointment_time ?? ""} foi concluído. ✂️</p>
+          <p style="margin:0 0 12px;">Seu corte com <strong>${employeeName}</strong> em ${dateBR} às ${data.appointment_time ?? ""} foi concluído.</p>
           <p style="margin:0;">Sua opinião vale muito: avalie de <strong>1 a 5 estrelas</strong> e, se quiser, deixe um comentário rápido. Leva menos de um minuto!</p>
-          ${buttonHtml(`${siteUrl}/me?tab=feedbacks`, "Avaliar agora ⭐")}
+          ${buttonHtml(`${siteUrl}/me?tab=feedbacks`, "Avaliar agora")}
           <p style="margin:0;color:#737373;font-size:12px;text-align:center;">Até o próximo corte!</p>
         `),
       });

@@ -6,7 +6,7 @@ import { maskPhone, unmaskPhone, today, formatDateBR } from "@/lib/utils";
 import { buildWhatsAppLink, confirmMessage } from "@/lib/whatsapp";
 import { OWNER_WHATSAPP } from "@/lib/config";
 import { cn } from "@/lib/utils";
-import { CheckIcon } from "@/components/icons";
+import { CheckIcon, ScissorsIcon } from "@/components/icons";
 import { SkeletonSlots } from "@/components/Loading";
 import { DayStrip } from "@/components/scheduling/DayStrip";
 import { TimeSlotGrid } from "@/components/scheduling/TimeSlotGrid";
@@ -198,8 +198,8 @@ export function SchedulingSection() {
                     : "border-brand-border bg-brand-card hover:border-brand-gold/40 hover:scale-[1.02]"
                 )}
               >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-darker text-base text-brand-gray">
-                  ★
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-darker text-brand-gray">
+                  <ScissorsIcon className="h-5 w-5" />
                 </span>
                 <span>
                   <span className="flex items-center gap-1.5">
